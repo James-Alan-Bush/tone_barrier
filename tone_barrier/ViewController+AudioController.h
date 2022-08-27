@@ -217,52 +217,108 @@ static void (^(^(^update_audio_controls)(MPNowPlayingInfoCenter *, MPRemoteComma
 
 
 
-
-
-typedef typeof(void(^ _Nonnull const)(bool)) update_control_block_ref;
-typedef typeof(void(^ _Nonnull const (* _Nonnull restrict))(bool)) update_control_block_t;
-
-static void (^(^(^(^audio_controller)(audio_state))(unsigned int))(update_control_block_ref))(void) = ^ (audio_state state) {
-    return ^ (unsigned int control_count) {
-        void (^blk)(bool) = ^ (bool cond) {
-            printf("cond == %s\n", (cond) ? "TRUE" : "FALSE");
-        };
-        const void * block = (__bridge const void * _Nonnull)(blk);
-        ((__bridge void (^)(bool))block)(TRUE);
-        typeof(const void *) * block_t = &block;
-        ((__bridge void (^)(bool))*block_t)(TRUE);
-        
-        typeof(const void *) blk_array[control_count];
-        typeof(blk_array) * blk_array_t = &blk_array;
-//        ^ (const void * blk_) {
-            ^ (typeof(typeof(const void *) *) * blk_array_ptr) {
-//                *(blk_array_ptr + 0) = &blk_;
-                
-            }(&blk_array_t);
-//        }((__bridge const void * _Nonnull)(blk));
-        
-        
-        typedef typeof(void(^const __strong *)(bool)) update_control_blocks[5]; // consider an array of char * to block pointers (for generics)
-        static typeof(update_control_blocks) update_control_blocks_ptr;
-        static unsigned long update_control_blocks_ptr_offset;
-        __block unsigned long (^recursive_block)(unsigned long);
-        return ^ (typeof(void(^const __strong *)(bool)) * update_control_blocks_t) {
-            return ^ (update_control_block_ref update_control_block) {
-                return ^ (unsigned long offset) {
-                    *(update_control_blocks_t + offset) = &update_control_block;
-                    return ^{
-                        (recursive_block = ^ unsigned long (unsigned long index) {
-                            update_control_block_ref update_control = *(*(update_control_blocks_t + 0));
-                            (update_control)(state()); // WRONG: capture the return value of state and then pass that value in
-                            return (unsigned long)(0UL ^ (unsigned long)(recursive_block)(~-index));
-                        })(~-offset);
-                    };
-                }(update_control_blocks_ptr_offset++);
-            };
-        }(&update_control_blocks_ptr[0]);
+typedef CFTypeRef _Nonnull (^stored_object)(void);
+stored_object (^ _Nonnull store_object)(CFTypeRef) = ^ (CFTypeRef storable_object) {
+    return ^ CFTypeRef (void) {
+        return (__bridge CFTypeRef)CFBridgingRelease(storable_object);
     };
 };
-static void (^ _Nonnull (^ _Nonnull const (* _Nonnull restrict audio_controller_t))(void))(void(^)(bool)) = &audio_controller;
+
+typedef typeof(CFTypeRef(^)(void)) update_control_block_ref;
+typedef typeof(CFTypeRef(^ _Nonnull const (* _Nonnull restrict))(void)) update_control_block_ref_t;
+typedef typeof(void(^ _Nonnull const)(bool)) update_control_block;
+typedef typeof(void(^ _Nonnull const (* _Nonnull restrict))(bool)) update_control_block_t;
+
+static void (^(^(^(^audio_controller)(audio_state))(unsigned long))(CFTypeRef(^)(void)))(void) = ^ (audio_state state) {
+    return ^ (unsigned long object_count) {
+        typedef CFTypeRef objects[object_count];
+        typeof(objects) objects_ptr[object_count];
+        return ^ (CFTypeRef * objects_t) {
+            return ^ (CFTypeRef(^write_object)(void)) {
+                for (unsigned int index = 0; index < object_count; index++) {
+                    *((CFTypeRef *)objects_t + index) = write_object();
+                }
+                return ^{
+                    for (unsigned int index = 0; index < object_count; index++) {
+                        ((__bridge typeof(void(^)(bool)))(store_object(*((CFTypeRef *)objects_t + index))()))(state());
+                    }
+                };
+            };
+        }(objects_ptr);
+    };
+};
+
+// ------------------------------------------------------------------
+
+//id (^retainable_object)(id(^)(void)) = ^ id (id(^object)(void)) {
+//    return ^{
+//        return object();
+//    };
+//};
+//
+//id (^(^retain_object)(id(^)(void)))(void) = ^ (id(^retainable_object)(void)) {
+//    id retained_object = retainable_object();
+//    return ^ id {
+//        return retained_object;
+//    };
+//};
+//
+//typedef typeof(unsigned long (^)(unsigned long)) recursive_iterator;
+//static void (^(^_iterator_)(const unsigned long))(id(^)(void)) = ^ (const unsigned long object_count) {
+//    typeof(id(^)(void)) retained_objects_ref;
+//    return ^ (id * retained_objects_t) {
+//        return ^ (id(^object)(void)) {
+//            //            return ^ (void (^(^retain_objects)(unsigned long))(void(^)(void))) {
+//            //                return ^ (unsigned long index) {
+//            //                    return retain_objects(index)(^{
+//            for (int index = 0 ; index < object_count; index++) {
+//                printf("retained_object: %p\n", (*((id * const)retained_objects_t + index) = retain_object(retainable_object(object))));
+//                ((typeof(update_control_block))(*((id * const)retained_objects_t + index)))(FALSE);
+//            }
+//            //        });
+//            //                }(object_count);
+//            //            };
+//        };
+//    }((id *)&retained_objects_ref);
+//};
+
+/*
+ id (^player_node_object)(void) = ^ id {
+ AVAudioPlayerNode * player = [[AVAudioPlayerNode alloc] init];
+ [player setRenderingAlgorithm:AVAudio3DMixingRenderingAlgorithmAuto];
+ [player setSourceMode:AVAudio3DMixingSourceModeAmbienceBed];
+ [player setPosition:AVAudioMake3DPoint(0.0, 0.0, 0.0)];
+ 
+ return player;
+}; iterator(2)(player_node_object);
+ 
+ */
+
+
+// ------------------------------------------------------------------
+
+//static void (^(^(^(^audio_controller)(audio_state))(unsigned int))(update_control_block_ref))(void) = ^ (audio_state state) {
+//    return ^ (unsigned int control_count) {
+//        typedef CFTypeRef update_control_blocks[control_count];
+//        typeof(update_control_blocks) update_control_blocks_ptr[control_count];
+//        return ^ (CFTypeRef * update_control_blocks_t) {
+//            __block unsigned long (^recursive_block)(unsigned long);
+//            return ^ (update_control_block_ref update_control_block) {
+//                return ^ (unsigned long offset) {
+////                    *((CFTypeRef *)update_control_blocks_t) = CFBridgingRetain((__bridge id _Nullable)(update_control_block()));
+////                    //                    *(update_control_blocks_t + offset) = &update_control_block;
+////                    (recursive_block = ^ unsigned long (unsigned long index) {
+////                        //                            update_control_block_ref update_control = *(*(update_control_blocks_t + 0));
+////                        update_control_block update_control = (*((CFTypeRef *)update_control_blocks_t + index));
+////                        (update_control)(state()); // WRONG: capture the return value of state and then pass that value in
+////                        return (unsigned long)(0UL ^ (unsigned long)(recursive_block)(~-index));
+////                    })(~-offset);
+//                };
+//            }(control_count);
+//        };
+//    }(&update_control_blocks_ptr[0]);
+//};
+//static void (^ _Nonnull (^ _Nonnull const (* _Nonnull restrict audio_controller_t))(void))(void(^)(bool)) = &audio_controller;
 
 /*
  

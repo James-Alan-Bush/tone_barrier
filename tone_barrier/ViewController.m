@@ -65,28 +65,59 @@ static const float (^(^generator)(const float, const float, const int))(void) = 
 //    }(&obj_collection);
 //};
 
+typedef const void (^ const __strong object_block)(const bool);
+object_block object_blk = ^ (const bool b) {
+    printf("object_blk state == %s\n", (b) ? "TRUE" : "FALSE");
+};
+object_block object_blk_2 = ^ (const bool b) {
+    printf("object_blk_2 state == %s\n", (b) ? "TRUE" : "FALSE");
+};
+object_block object_blk_3 = ^ (const bool b) {
+    printf("object_blk_3 state == %s\n", (b) ? "TRUE" : "FALSE");
+};
 
-//typedef typeof(unsigned long (^)(unsigned long)) iterator;
-//typedef typeof(void(^__strong)(bool)) mapper;
-//typedef typeof(void(^__strong)(bool)) applier;
-//static void (^(^(^iterate_)(const unsigned long))(typeof(void(^__strong)(bool))))(void) = ^ (const unsigned long iterations) {
-//    const id * obj_collection[iterations];
-//    return ^ (const id ** obj_collection_t) {
-//        __block iterator integrand;
-//        return ^ (void(^map)(bool)) {
-//            (integrand = ^ unsigned long (unsigned long index) {
-//                --index;
-//                *(obj_collection_t + index) = (const id *)&map;
-//                ((void(^)(bool))(*(*(obj_collection_t + index))))(TRUE);
-//                //                ((void(^)(bool))(*((id *)obj_collection_t + index)))(TRUE);
-//                return (unsigned long)(index ^ 0UL) && (unsigned long)(integrand)(index);
-//            })(iterations);
-//            return ^{
-//                ((void(^)(bool))(*(*(obj_collection_t + 0UL))))(TRUE);
-//            };
-//        };
-//    }(&obj_collection[0]);
+
+
+typedef const typeof(object_block *) retained_object;
+
+//typedef retained_object (^ const __strong object_block_retain)(object_block);
+//object_block_retain retain_object = (^ retained_object (object_block b) {
+//    return Block_copy((retained_object)CFBridgingRetain(b));
+//});
+//
+//typedef void (^ const __strong object_block_release)(retained_object);
+//object_block_release release_object = ^ (retained_object retained_obj) {
+//    ((object_block)CFBridgingRelease(retained_obj))(FALSE);
 //};
+
+
+object_block (^ const __strong object_block_store)(object_block) = ^ (object_block blk_ref) {
+    return ^ (retained_object retained_blk) {
+        Block_release(retained_blk);
+        return (object_block)*retained_blk;
+    }(Block_copy(&blk_ref));
+};
+
+static void (^(^objects_iterator)(const unsigned long))(object_block) = ^ (const unsigned long count) {
+    typedef typeof(const id *) retained_objects[count];
+    typeof(retained_objects) retained_objects_ptr[count];
+    return ^ (const id * _Nonnull retained_objects_t) {
+        static unsigned long object_index = 0;
+        return ^ (object_block object) {
+            ^ (unsigned long * object_index_t) {
+                ^ (const id * _Nonnull retained_objects_t) {
+                    for (int i = 0; i < (*object_index_t + 1); i++)
+                        ((object_block)(*((id * const)retained_objects_t + *object_index_t)))(*object_index_t % 2);
+                    (*object_index_t = *object_index_t + 1);
+                }(^ const id * _Nonnull (const id * _Nonnull retained_objects_t) {
+                    *((id * const)retained_objects_t + *object_index_t) = (id)(object_block_store(object));
+                    printf("write pointer == %p\n", (*((id * const)retained_objects_t + *object_index_t)));
+                    return (const id *)(retained_objects_t);
+                }((const id *)(retained_objects_t)));
+            }(&object_index);
+        };
+    }((const id *)&retained_objects_ptr);
+};
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -95,18 +126,15 @@ static const float (^(^generator)(const float, const float, const int))(void) = 
     printf("stride = %f\n", stride());
     printf("stride = %f\n", stride());
     
-    //    iterate_(1)(^ (bool state) {
-    //        printf("iterate_+state == %s", (state) ? "TRUE" : "FALSE");
-    //    })();
+    void (^object_array)(object_block) = objects_iterator(3);
+    object_array(object_blk);
+    object_array(object_blk_2);
+    object_array(object_blk_3);
+
+//    void (^toggle_play_pause_button)(void) = audio_controller(audio_state_ref_init(audio_engine(audio_source(audio_renderer())), audio_session()))(1)(object);
     
-    void (^state)(bool) = ^ (bool state) {
-        printf("state == %s\n", (state) ? "TRUE" : "FALSE");
-    };
-    void (^ const * state_t)(bool) = &state;
-    void (^toggle_play_pause_button)(void) = audio_controller(audio_state_ref_init(audio_engine(audio_source(audio_renderer())), audio_session()))(1)(state);
-    
-    objc_setAssociatedObject(self.playPauseButton, @selector(invoke), toggle_play_pause_button, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    [self.playPauseButton addTarget:toggle_play_pause_button action:@selector(invoke) forControlEvents:UIControlEventTouchDown];
+//    objc_setAssociatedObject(self.playPauseButton, @selector(invoke), toggle_play_pause_button, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+//    [self.playPauseButton addTarget:toggle_play_pause_button action:@selector(invoke) forControlEvents:UIControlEventTouchDown];
 }
 
 @end

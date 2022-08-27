@@ -94,8 +94,8 @@
 				B9F10667289A1501007BC7F7 /* ViewController.m */,
 				B9F10679289AAA1A007BC7F7 /* ViewController+AudioController.h */,
 				B9F10669289A1501007BC7F7 /* Main.storyboard */,
-				B9F1066C289A1501007BC7F7 /* Assets.xcassets */,
 				B9F1066E289A1501007BC7F7 /* LaunchScreen.storyboard */,
+				B9F1066C289A1501007BC7F7 /* Assets.xcassets */,
 				B9F10671289A1501007BC7F7 /* Info.plist */,
 				B9F10672289A1501007BC7F7 /* main.m */,
 			);
